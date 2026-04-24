@@ -1,19 +1,95 @@
 # Swiggy Lunch Bot
 
-Small idea for a Slack app: the team picks a vibe (biryani, pizza, whatever), the bot narrows it down to one Swiggy order inside a per-person budget, then drops a bill split in the thread so nobody has to do math in chat.
+**Slack-native group lunch orders** backed by the Swiggy Food MCP — vote on cuisines, resolve one restaurant and cart within budget, place the order, and post a bill split to the thread.
 
-**Demo:** [Video Project 2.mp4](uploads/Video%20Project%202.mp4)
+## Demo
 
-<video src="uploads/Video%20Project%202.mp4" controls playsinline width="720"></video>
+<p align="center">
+  <video
+    src="https://raw.githubusercontent.com/Akash8585/swiggy-bot/main/uploads/Video%20Project%202.mp4"
+    controls
+    playsinline
+    preload="metadata"
+    width="720"
+    style="max-width:100%;height:auto;border-radius:12px;border:1px solid #2d3035;background:#1a1d21;"
+  >
+    Your browser does not support embedded video — <a href="https://raw.githubusercontent.com/Akash8585/swiggy-bot/main/uploads/Video%20Project%202.mp4">open the MP4</a> or use the <a href="./uploads/Video%20Project%202.mp4">repo file link</a>.
+  </video>
+</p>
 
-The interactive mock is in [`demo/index.html`](demo/index.html). Open it in a browser, or run `npm install` and `npm run demo` to serve it locally on port 3456.
+<p align="center">
+  <a href="https://raw.githubusercontent.com/Akash8585/swiggy-bot/main/uploads/Video%20Project%202.mp4"><strong>Video Project 2.mp4</strong></a>
+  ·
+  <a href="./uploads/Video%20Project%202.mp4">Same file in the repo</a>
+  ·
+  Flow: slash command → votes → best match → bill split (<code>demo/index.html</code>)
+</p>
 
----
+## Problem
 
-**What’s actually here right now:** a static demo of the Slack thread (slash command → votes → “best match” cart → bill split), plus stub Node files for a future Bolt app and Swiggy MCP client. Nothing hits Swiggy or Slack until you wire tokens and real handlers.
+Team lunch on Swiggy often turns into long threads and mismatched carts. **Swiggy Lunch Bot** keeps the decision in one place: a slash command sets budget and headcount, the team votes on mood, and the bot uses MCP-backed search and menu data to propose a single optimized order. One confirmation places the order; everyone sees what they owe.
 
-**Docs:** [architecture](docs/architecture.md) · [MCP integration notes](docs/mcp-integration.md)
+## Live demo
 
-**Slack stub:** copy `.env.example` to `.env`, drop in a bot token / signing secret / app token if you’re using socket mode, then `npm start`. `/swiggy-order` only replies with a short placeholder message for now.
+The interactive UI mock is in **`demo/index.html`**. Host it on any static file host, or use the included **`vercel.json`** so `/` serves the demo.
 
-License: MIT.
+**Vercel:** import the GitHub repo → framework **Other** → deploy. Your project URL opens the demo at `/`.
+
+Local: `npm install` → `npm run demo` → open `http://localhost:3456`.
+
+## Architecture
+
+See **[docs/architecture.md](docs/architecture.md)** for the flow diagram and tech choices.
+
+- **Slack Bolt** — slash commands, Block Kit, interactive buttons  
+- **`order-resolver.js`** — votes + constraints → cart (stub)  
+- **`swiggy-mcp.js`** — MCP client for `search_restaurants`, `get_menu`, `place_order` (stub)
+
+## Swiggy MCP
+
+See **[docs/mcp-integration.md](docs/mcp-integration.md)** for tools, sequence, OAuth outline, and error handling.
+
+## Setup (partial)
+
+1. Clone and `npm install`.
+2. Slack app: slash command `/swiggy-order`, Socket Mode or a public URL, install to workspace.
+3. Env vars (see **`.env.example`**):
+
+```bash
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_SIGNING_SECRET=...
+SLACK_APP_TOKEN=xapp-...   # Socket Mode
+```
+
+4. `npm start` — runs `src/bot.js` (stub ephemeral reply on `/swiggy-order` until you wire Block Kit + MCP).
+
+## Repo layout
+
+```
+swiggy-lunchbot/
+├── README.md
+├── demo/
+│   └── index.html
+├── docs/
+│   ├── architecture.md
+│   └── mcp-integration.md
+├── uploads/
+│   └── Video Project 2.mp4   ← demo recording
+├── src/
+│   ├── bot.js
+│   ├── swiggy-mcp.js
+│   └── order-resolver.js
+└── package.json
+```
+
+## Roadmap
+
+- [ ] Modal after `/swiggy-order` (budget, headcount, channel)
+- [ ] Persist sessions + poll state
+- [ ] Real Swiggy MCP transport + auth
+- [ ] Resolver tests + optional LLM for dietary notes in thread
+- [ ] Optional Splitwise / UPI export
+
+## License
+
+MIT
