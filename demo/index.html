@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Swiggy Lunch Bot — Interactive Slack demo</title>
+  <style>
+    :root {
+      --font-sans: "Lato", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --border-radius-lg: 12px;
+      --page-bg: #0f1114;
+      --page-fg: #c5c6c8;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page-bg);
+      color: var(--page-fg);
+      font-family: var(--font-sans);
+      padding: 24px 16px 48px;
+    }
+    .page-intro {
+      max-width: 720px;
+      margin: 0 auto 20px;
+      text-align: center;
+    }
+    .page-intro h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 8px;
+      color: #e8e8e8;
+    }
+    .page-intro p {
+      margin: 0;
+      font-size: 14px;
+      color: #9ea3a9;
+      line-height: 1.5;
+    }
+    .demo-shell {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .slack-wrap {
+      background: #1a1d21;
+      border-radius: var(--border-radius-lg);
+      padding: 0;
+      overflow: hidden;
+      font-family: var(--font-sans);
+      border: 1px solid #2d3035;
+    }
+    .slack-top {
+      background: #19171d;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .slack-top-name { color: #d1d2d3; font-size: 14px; font-weight: 500; }
+    .slack-top-sub { color: #7a7f87; font-size: 12px; }
+    .slack-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+    .msg-row { display: flex; gap: 10px; padding: 4px 0; align-items: flex-start; }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 500;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .msg-content { flex: 1; }
+    .msg-name { font-size: 13px; font-weight: 500; color: #d1d2d3; margin-bottom: 2px; }
+    .msg-name span { font-size: 11px; color: #7a7f87; font-weight: 400; margin-left: 8px; }
+    .msg-text { font-size: 14px; color: #d1d2d3; line-height: 1.5; }
+    .msg-text .mention { color: #6bc3f5; background: rgba(107,195,245,0.1); padding: 0 3px; border-radius: 3px; }
+    .bot-card {
+      background: #222529;
+      border: 1px solid #3d4045;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      max-width: 480px;
+    }
+    .bot-card-title { font-size: 14px; font-weight: 500; color: #e8e8e8; margin-bottom: 4px; }
+    .bot-card-sub { font-size: 13px; color: #9ea3a9; margin-bottom: 12px; line-height: 1.5; }
+    .poll-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .poll-label { font-size: 13px; color: #d1d2d3; min-width: 110px; }
+    .poll-bar-wrap { flex: 1; background: #2d3035; border-radius: 4px; height: 8px; overflow: hidden; }
+    .poll-bar { height: 100%; border-radius: 4px; background: #4a9eda; transition: width 0.6s ease; }
+    .poll-count { font-size: 12px; color: #7a7f87; min-width: 40px; text-align: right; }
+    .vote-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .vote-btn {
+      background: #2d3035;
+      border: 1px solid #4a4f55;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #d1d2d3;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .vote-btn:hover { background: #383d43; }
+    .vote-btn.selected { background: #1c4e73; border-color: #4a9eda; color: #6bc3f5; }
+    .result-card {
+      background: #1e2e1e;
+      border: 1px solid #2d5a2d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      max-width: 480px;
+    }
+    .result-title { font-size: 13px; font-weight: 500; color: #6aaf6a; margin-bottom: 10px; }
+    .rest-name { font-size: 16px; font-weight: 500; color: #e8e8e8; margin-bottom: 2px; }
+    .rest-meta { font-size: 12px; color: #9ea3a9; margin-bottom: 10px; }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #2d3d2d;
+    }
+    .item-name { font-size: 13px; color: #d1d2d3; }
+    .item-who { font-size: 11px; color: #7a7f87; }
+    .item-price { font-size: 13px; color: #9ea3a9; }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #e8e8e8;
+    }
+    .order-btn {
+      background: #e37f0a;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+    }
+    .order-btn:hover { background: #c97008; }
+    .order-btn:disabled { background: #4a4f55; color: #7a7f87; cursor: not-allowed; }
+    .step-indicator {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #19171d;
+      border-bottom: 1px solid #2d2d2d;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .step { width: 8px; height: 8px; border-radius: 50%; background: #3d4045; }
+    .step.done { background: #4a9eda; }
+    .step.active { background: #e37f0a; }
+    .step-label { font-size: 11px; color: #7a7f87; margin-left: 4px; }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #19171d;
+      border-top: 1px solid #2d2d2d;
+    }
+    .sim-btn {
+      background: #2d3035;
+      border: 1px solid #4a4f55;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: #d1d2d3;
+      cursor: pointer;
+      flex: 1;
+    }
+    .sim-btn:hover { background: #383d43; }
+    .sim-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .tag-bot {
+      font-size: 10px;
+      background: #4a9eda;
+      color: #0a2a40;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    /* Slash command screen */
+    .slash-screen {
+      border: 1px solid #3d4045;
+      border-radius: 8px;
+      background: #222529;
+      padding: 14px 16px;
+      max-width: 480px;
+    }
+    .slash-screen h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #7a7f87;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .slash-cmd {
+      font-family: ui-monospace, monospace;
+      font-size: 15px;
+      color: #e8e8e8;
+      padding: 10px 12px;
+      background: #1a1d21;
+      border-radius: 6px;
+      border: 1px solid #4a4f55;
+      margin-bottom: 12px;
+    }
+    .slash-cmd .cmd { color: #6bc3f5; }
+    .slash-hint { font-size: 12px; color: #9ea3a9; line-height: 1.5; margin-bottom: 14px; }
+    .slash-fields { display: grid; gap: 8px; margin-bottom: 14px; }
+    .slash-field label {
+      display: block;
+      font-size: 11px;
+      color: #7a7f87;
+      margin-bottom: 4px;
+    }
+    .slash-field input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #4a4f55;
+      background: #1a1d21;
+      color: #d1d2d3;
+      font-size: 13px;
+    }
+    .primary-btn {
+      background: #4a154b;
+      border: 1px solid #7c3085;
+      color: #e8e8e8;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .primary-btn:hover { background: #5a1a5c; }
+
+    /* Bill split */
+    .split-card {
+      background: #252a30;
+      border: 1px solid #3d4a5c;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      max-width: 480px;
+    }
+    .split-title { font-size: 13px; font-weight: 600; color: #6bc3f5; margin-bottom: 10px; }
+    .split-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .split-table th {
+      text-align: left;
+      color: #7a7f87;
+      font-weight: 500;
+      padding: 6px 4px;
+      border-bottom: 1px solid #3d4045;
+    }
+    .split-table td { padding: 8px 4px; color: #d1d2d3; border-bottom: 1px solid #2d3035; }
+    .split-table td.num { text-align: right; color: #9ea3a9; font-variant-numeric: tabular-nums; }
+    .split-foot {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      font-size: 12px;
+      color: #9ea3a9;
+    }
+    .split-foot strong { color: #e8e8e8; }
+  </style>
+</head>
+<body>
+  <div class="page-intro">
+    <h1>Swiggy Lunch Bot</h1>
+    <p>Four-step flow: slash command → team vote → AI match → bill split. Use the controls to walk through a simulated Slack thread.</p>
+  </div>
+
+  <div class="demo-shell">
+    <h2 class="sr-only">Swiggy group order Slack bot interactive demo</h2>
+
+    <div class="slack-wrap">
+      <div class="slack-top">
+        <div>
+          <div class="slack-top-name"># lunch-orders</div>
+          <div class="slack-top-sub">Engineering team — 6 members</div>
+        </div>
+      </div>
+
+      <div class="step-indicator">
+        <div class="step active" id="s1"></div>
+        <div class="step" id="s2"></div>
+        <div class="step" id="s3"></div>
+        <div class="step" id="s4"></div>
+        <span class="step-label" id="step-label">Step 1 of 4 — slash command</span>
+      </div>
+
+      <div class="slack-body" id="chat">
+        <div class="slash-screen" id="slash-screen">
+          <h3>Where it starts</h3>
+          <div class="slash-cmd" aria-label="Slash command example">
+            <span class="cmd">/swiggy-order</span> budget:250 heads:6 channel:#lunch-orders
+          </div>
+          <p class="slash-hint">Anyone with the app installed can run the command from any channel. The bot opens a thread, pings the roster, and caps spend per person.</p>
+          <div class="slash-fields">
+            <div class="slash-field">
+              <label for="budget">Budget per person (₹)</label>
+              <input id="budget" type="number" value="250" min="100" max="2000" />
+            </div>
+            <div class="slash-field">
+              <label for="heads">Headcount</label>
+              <input id="heads" type="number" value="6" min="2" max="50" />
+            </div>
+          </div>
+          <button type="button" class="primary-btn" id="btn-start-slash" onclick="startFromSlash()">Post to #lunch-orders</button>
+        </div>
+
+        <div id="channel-stack" style="display:none">
+          <div class="msg-row">
+            <div class="avatar" style="background:#3d2b6b;color:#c4a8f5">PR</div>
+            <div class="msg-content">
+              <div class="msg-name">Priya R <span>11:32 AM</span></div>
+              <div class="msg-text"><span class="mention">@SwiggyBot</span> order lunch for the team, budget ₹<span id="disp-budget">250</span> per head</div>
+            </div>
+          </div>
+
+          <div class="msg-row">
+            <div class="avatar" style="background:#0a3050;color:#6bc3f5">SB</div>
+            <div class="msg-content">
+              <div class="msg-name">SwiggyBot <span class="tag-bot">APP</span><span>11:32 AM</span></div>
+              <div class="msg-text">Got it! Starting a group order for <span id="disp-heads">6</span> people, ₹<span id="disp-budget2">250</span>/head. Let me find what works for everyone.</div>
+              <div class="bot-card">
+                <div class="bot-card-title">What are you in the mood for?</div>
+                <div class="bot-card-sub">Vote below — I'll find the best restaurant that satisfies the most people.</div>
+                <div class="vote-btns" id="vote-area">
+                  <button type="button" class="vote-btn" onclick="castVote(this,'Biryani')">Biryani</button>
+                  <button type="button" class="vote-btn" onclick="castVote(this,'Pizza')">Pizza</button>
+                  <button type="button" class="vote-btn" onclick="castVote(this,'South Indian')">South Indian</button>
+                  <button type="button" class="vote-btn" onclick="castVote(this,'Rolls & Wraps')">Rolls & Wraps</button>
+                  <button type="button" class="vote-btn" onclick="castVote(this,'Healthy')">Healthy</button>
+                </div>
+                <div style="margin-top:12px" id="poll-bars">
+                  <div class="poll-row"><span class="poll-label">Biryani</span><div class="poll-bar-wrap"><div class="poll-bar" id="bar-Biryani" style="width:33%"></div></div><span class="poll-count" id="cnt-Biryani">2/6</span></div>
+                  <div class="poll-row"><span class="poll-label">Pizza</span><div class="poll-bar-wrap"><div class="poll-bar" id="bar-Pizza" style="width:17%"></div></div><span class="poll-count" id="cnt-Pizza">1/6</span></div>
+                  <div class="poll-row"><span class="poll-label">South Indian</span><div class="poll-bar-wrap"><div class="poll-bar" id="bar-South Indian" style="width:17%"></div></div><span class="poll-count" id="cnt-South Indian">1/6</span></div>
+                  <div class="poll-row"><span class="poll-label">Rolls & Wraps</span><div class="poll-bar-wrap"><div class="poll-bar" id="bar-Rolls & Wraps" style="width:0%"></div></div><span class="poll-count" id="cnt-Rolls & Wraps">0/6</span></div>
+                  <div class="poll-row"><span class="poll-label">Healthy</span><div class="poll-bar-wrap"><div class="poll-bar" id="bar-Healthy" style="width:0%"></div></div><span class="poll-count" id="cnt-Healthy">0/6</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="extra-msgs"></div>
+          <div id="result-section"></div>
+          <div id="post-order-msgs"></div>
+        </div>
+      </div>
+
+      <div class="action-row" id="action-row" style="display:none">
+        <button type="button" class="sim-btn" id="btn-simulate" onclick="simulateVotes()">Simulate remaining votes</button>
+        <button type="button" class="sim-btn" id="btn-confirm" onclick="confirmOrder()" disabled>Place order</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const total = 6;
+    const votes = { Biryani: 2, Pizza: 1, 'South Indian': 1, 'Rolls & Wraps': 0, Healthy: 0 };
+    let myVote = null;
+    let votesCast = 4;
+    let simDone = false;
+    let channelStarted = false;
+
+    function setStep(n, label) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('s' + i);
+        el.classList.remove('active', 'done');
+        if (i < n) el.classList.add('done');
+        else if (i === n) el.classList.add('active');
+      }
+      document.getElementById('step-label').textContent = label;
+    }
+
+    function startFromSlash() {
+      if (channelStarted) return;
+      channelStarted = true;
+      const b = document.getElementById('budget').value || '250';
+      const h = document.getElementById('heads').value || '6';
+      document.getElementById('disp-budget').textContent = b;
+      document.getElementById('disp-budget2').textContent = b;
+      document.getElementById('disp-heads').textContent = h;
+      document.getElementById('slash-screen').style.display = 'none';
+      document.getElementById('channel-stack').style.display = 'block';
+      document.getElementById('action-row').style.display = 'flex';
+      setStep(2, 'Step 2 of 4 — collecting votes');
+      document.getElementById('chat').scrollTop = 0;
+    }
+
+    function castVote(btn, choice) {
+      if (myVote) return;
+      myVote = choice;
+      btn.classList.add('selected');
+      votes[choice]++;
+      votesCast++;
+      updateBars();
+      if (votesCast >= total) triggerResult();
+    }
+
+    function updateBars() {
+      for (const k of Object.keys(votes)) {
+        const v = votes[k];
+        const pct = Math.round((v / total) * 100);
+        const bar = document.getElementById('bar-' + k);
+        const cnt = document.getElementById('cnt-' + k);
+        if (bar) bar.style.width = pct + '%';
+        if (cnt) cnt.textContent = v + '/' + total;
+      }
+    }
+
+    function simulateVotes() {
+      if (simDone) return;
+      simDone = true;
+      document.getElementById('btn-simulate').disabled = true;
+      document.querySelectorAll('#vote-area .vote-btn').forEach(function (b) {
+        b.classList.remove('selected');
+      });
+      myVote = 'Biryani';
+      document.querySelectorAll('#vote-area .vote-btn').forEach(function (b) {
+        if (b.textContent === 'Biryani') b.classList.add('selected');
+      });
+      Object.assign(votes, { Biryani: 3, Pizza: 1, 'South Indian': 2, 'Rolls & Wraps': 0, Healthy: 0 });
+      votesCast = total;
+      updateBars();
+
+      const extra = document.getElementById('extra-msgs');
+      extra.innerHTML =
+        '<div class="msg-row" style="margin-top:6px">' +
+          '<div class="avatar" style="background:#1a3d2a;color:#6aaf6a">AK</div>' +
+          '<div class="msg-content">' +
+            '<div class="msg-name">Aditya K <span>11:34 AM</span></div>' +
+            '<div class="msg-text">Voted: Biryani</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="msg-row">' +
+          '<div class="avatar" style="background:#3d1a2a;color:#f598b8">MS</div>' +
+          '<div class="msg-content">' +
+            '<div class="msg-name">Meghna S <span>11:34 AM</span></div>' +
+            '<div class="msg-text">Voted: South Indian</div>' +
+          '</div>' +
+        '</div>';
+
+      setTimeout(triggerResult, 600);
+    }
+
+    function triggerResult() {
+      setStep(3, 'Step 3 of 4 — AI found best match');
+      const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
+      const budget = document.getElementById('disp-budget2').textContent;
+
+      const res = document.getElementById('result-section');
+      res.innerHTML =
+        '<div class="msg-row" style="margin-top:8px">' +
+          '<div class="avatar" style="background:#0a3050;color:#6bc3f5">SB</div>' +
+          '<div class="msg-content">' +
+            '<div class="msg-name">SwiggyBot <span class="tag-bot">APP</span><span>11:35 AM</span></div>' +
+            '<div class="msg-text">Votes are in! <strong style="color:#e8e8e8">' + winner + ' wins (' + votes[winner] + ' votes)</strong>. I found a restaurant rated 4.5 that delivers in 28 min within budget. Here\'s the optimized order:</div>' +
+            '<div class="result-card">' +
+              '<div class="result-title">Best match found — Behrouz Biryani</div>' +
+              '<div class="rest-name">Behrouz Biryani</div>' +
+              '<div class="rest-meta">4.5 stars · 28 min · Free delivery · Koramangala</div>' +
+              '<div class="item-row"><div><div class="item-name">Dum Gosht Biryani (x3)</div><div class="item-who">Priya, Aditya + you</div></div><div class="item-price">₹699</div></div>' +
+              '<div class="item-row"><div><div class="item-name">Veg Dum Biryani (x2)</div><div class="item-who">Meghna, Ravi</div></div><div class="item-price">₹478</div></div>' +
+              '<div class="item-row"><div><div class="item-name">Chicken 65 (shared)</div><div class="item-who">Sides for table</div></div><div class="item-price">₹229</div></div>' +
+              '<div class="total-row"><span>Total (6 people)</span><span>₹1,406</span></div>' +
+              '<div style="font-size:12px;color:#7a7f87;margin-top:4px">₹234/head · within ₹' + budget + ' budget</div>' +
+              '<button type="button" class="order-btn" id="order-btn" onclick="placeOrder()">Place order on Swiggy</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById('btn-confirm').disabled = false;
+      document.getElementById('chat').scrollTop = 99999;
+    }
+
+    function billSplitHtml() {
+      return (
+        '<div class="msg-row" style="margin-top:8px">' +
+          '<div class="avatar" style="background:#0a3050;color:#6bc3f5">SB</div>' +
+          '<div class="msg-content">' +
+            '<div class="msg-name">SwiggyBot <span class="tag-bot">APP</span><span>11:36 AM</span></div>' +
+            '<div class="msg-text">Here\'s the split so finance (or Splitwise) stays painless:</div>' +
+            '<div class="split-card">' +
+              '<div class="split-title">Bill split — ₹1,406 total</div>' +
+              '<table class="split-table">' +
+                '<thead><tr><th>Teammate</th><th>Line items</th><th class="num">Share</th></tr></thead>' +
+                '<tbody>' +
+                  '<tr><td>Priya R.</td><td>Dum Gosht</td><td class="num">₹233</td></tr>' +
+                  '<tr><td>Aditya K.</td><td>Dum Gosht</td><td class="num">₹233</td></tr>' +
+                  '<tr><td>You</td><td>Dum Gosht + ⅓ Chicken 65</td><td class="num">₹310</td></tr>' +
+                  '<tr><td>Meghna S.</td><td>Veg Dum</td><td class="num">₹239</td></tr>' +
+                  '<tr><td>Ravi T.</td><td>Veg Dum</td><td class="num">₹239</td></tr>' +
+                  '<tr><td>Shared</td><td>⅔ Chicken 65 (table)</td><td class="num">₹152</td></tr>' +
+                '</tbody>' +
+              '</table>' +
+              '<div class="split-foot"><span>Rounded; <strong>₹0</strong> drift vs cart</span><span>Order ID <strong>SWG-48291</strong></span></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function placeOrder() {
+      const ob = document.getElementById('order-btn');
+      if (ob) {
+        ob.disabled = true;
+        ob.textContent = 'Placing order...';
+      }
+      setStep(4, 'Step 4 of 4 — bill split & confirmation');
+      document.getElementById('btn-confirm').disabled = true;
+
+      setTimeout(function () {
+        if (ob) {
+          ob.textContent = 'Order placed!';
+          ob.style.background = '#2d5a2d';
+        }
+        const wrap = document.getElementById('post-order-msgs');
+        const confirm = document.createElement('div');
+        confirm.innerHTML =
+          '<div class="msg-row" style="margin-top:8px">' +
+            '<div class="avatar" style="background:#0a3050;color:#6bc3f5">SB</div>' +
+            '<div class="msg-content">' +
+              '<div class="msg-name">SwiggyBot <span class="tag-bot">APP</span><span>11:36 AM</span></div>' +
+              '<div class="msg-text" style="color:#6aaf6a;font-weight:500">Order confirmed! Behrouz Biryani arriving in ~28 minutes. Tracking link sent to everyone in this thread.</div>' +
+            '</div>' +
+          '</div>';
+        wrap.appendChild(confirm);
+
+        const split = document.createElement('div');
+        split.innerHTML = billSplitHtml();
+        wrap.appendChild(split);
+
+        for (let i = 1; i <= 4; i++) {
+          const el = document.getElementById('s' + i);
+          el.classList.remove('active');
+          el.classList.add('done');
+        }
+        document.getElementById('step-label').textContent = 'Done — lunch is on its way!';
+        document.getElementById('chat').scrollTop = 99999;
+      }, 1200);
+    }
+
+function confirmOrder() {
+  placeOrder();
+}
+</script>
