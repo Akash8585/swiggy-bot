@@ -4,6 +4,8 @@
 
 ## Demo
 
+**Live demo:** [https://swiggy-bot.vercel.app/](https://swiggy-bot.vercel.app/) — interactive mock (slash command → vote → match → bill split).
+
 <p align="center">
   <video
     src="https://raw.githubusercontent.com/Akash8585/swiggy-bot/main/uploads/Video%20Project%202.mp4"
@@ -31,9 +33,9 @@ Team lunch on Swiggy often turns into long threads and mismatched carts. **Swigg
 
 ## Live demo
 
-The interactive UI mock is in **`demo/index.html`**. Host it on any static file host, or use the included **`vercel.json`** so `/` serves the demo.
+Hosted version: **[https://swiggy-bot.vercel.app/](https://swiggy-bot.vercel.app/)** (same UI as **`demo/index.html`**).
 
-**Vercel:** import the GitHub repo → framework **Other** → deploy. Your project URL opens the demo at `/`.
+To deploy your own fork: import the repo in [Vercel](https://vercel.com) → framework **Other** → use the included **`vercel.json`** so `/` serves the demo.
 
 Local: `npm install` → `npm run demo` → open `http://localhost:3456`.
 
